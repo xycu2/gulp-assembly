@@ -1,5 +1,7 @@
 const {src, dest, watch, parallel, series} = require('gulp');
 
+const fs = require('fs');
+
 const scss = require('gulp-sass')(require('sass'));
 const concat = require('gulp-concat');
 const uglify = require('gulp-uglify-es').default;
@@ -9,6 +11,57 @@ const clean = require('gulp-clean');
 const webp = require('gulp-webp').default;
 const imagemin = require('gulp-imagemin');
 const newer = require('gulp-newer');
+const svgSprite = require('gulp-svg-sprite');
+const fonter = require('gulp-fonter');
+const ttf2woff2 = require('gulp-ttf2woff2');
+const ttf2woff = require('gulp-ttf2woff').default;
+
+
+function makeTtf() {
+    return src('app/fonts/src/**/*.{ttf,otf}', { encoding: false })
+        .pipe(fonter({
+            formats: ['ttf']
+        }))
+        .pipe(dest('app/fonts'));
+}
+
+function convertWebFonts() {
+    return src('app/fonts/*.ttf', { encoding: false })
+        .pipe(ttf2woff())
+        .pipe(dest('app/fonts'))
+        .pipe(src('app/fonts/*.ttf', { encoding: false }))
+        .pipe(ttf2woff2())
+        .pipe(dest('app/fonts'));
+}
+
+function cleanTtf(done) {
+    const files = fs.readdirSync('app/fonts');
+    files.forEach(file => {
+        if (file.endsWith('.ttf')) {
+            fs.unlinkSync(`app/fonts/${file}`);
+        }
+    });
+    done();
+}
+
+exports.fonts = series(makeTtf, convertWebFonts, cleanTtf);
+
+
+function sprite() {
+    return src([
+        'app/images/dist/*.svg',      
+        '!app/images/dist/sprite.svg' 
+    ], { encoding: false })
+    .pipe(svgSprite({
+        mode: {
+            stack: {
+                sprite: '../sprite.svg',
+                example: true
+            }
+        }
+    }))
+    .pipe(dest('app/images/dist'));
+}
 
 function convertWebp() {
     return src('app/images/src/**/*.{png,jpg,jpeg}', { encoding: false })
@@ -68,8 +121,9 @@ function cleanDist() {
 function building() {
   return src([
     'app/css/style.min.css',
-    'app/images/dist/**/*', 
+    'app/images/dist/**/*',
     'app/js/main.min.js',
+    'app/fonts/*.{woff,woff2}',
     'app/**/*.html'
   ], { base: 'app', encoding: false })
   .pipe(dest('dist'));
@@ -77,6 +131,7 @@ function building() {
 
 exports.styles = styles;
 exports.images = images;
+exports.sprite = sprite;
 exports.scripts = scripts;
 exports.watching = watching;
 
