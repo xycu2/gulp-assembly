@@ -121,12 +121,20 @@ function cleanDist() {
 function building() {
   return src([
     'app/css/style.min.css',
-    'app/images/dist/**/*',
+    'app/images/dist/*.{png,jpg,jpeg,webp,gif,avif}',
+    'app/images/dist/sprite.svg',
     'app/js/main.min.js',
     'app/fonts/*.{woff,woff2}',
     'app/**/*.html'
-  ], { base: 'app', encoding: false })
+  ], { base: 'app', encoding: false, allowEmpty: true })
   .pipe(dest('dist'));
+}
+
+function cleanBuildStack(done) {
+    if (fs.existsSync('dist/images/dist/stack')) {
+        fs.rmSync('dist/images/dist/stack', { recursive: true, force: true });
+    }
+    done();
 }
 
 exports.styles = styles;
@@ -135,5 +143,5 @@ exports.sprite = sprite;
 exports.scripts = scripts;
 exports.watching = watching;
 
-exports.build = series(cleanDist, images, building);
+exports.build = series(cleanDist, images, building, cleanBuildStack);
 exports.default = parallel(styles, scripts, watching);
