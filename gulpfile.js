@@ -15,7 +15,16 @@ const svgSprite = require('gulp-svg-sprite');
 const fonter = require('gulp-fonter');
 const ttf2woff2 = require('gulp-ttf2woff2');
 const ttf2woff = require('gulp-ttf2woff').default;
+const include = require('gulp-include');
 
+function pages() {
+    return src('app/pages/*.html')
+    .pipe(include({
+        includePaths: 'app/components'
+    }))
+    .pipe(dest('app'))
+    .pipe(browserSync.stream())
+}
 
 function makeTtf() {
     return src('app/fonts/src/**/*.{ttf,otf}', { encoding: false })
@@ -109,6 +118,7 @@ function watching() {
     watch(['app/scss/style.scss'], styles)
     watch(['app/images/src'], images)
     watch(['app/js/main.js'], scripts)
+    watch(['app/components/*', 'app/pages/*'], pages)
     watch(['app/*.html']).on('change', browserSync.reload);
 }
 
@@ -139,9 +149,10 @@ function cleanBuildStack(done) {
 
 exports.styles = styles;
 exports.images = images;
+exports.pages = pages;
 exports.sprite = sprite;
 exports.scripts = scripts;
 exports.watching = watching;
 
 exports.build = series(cleanDist, images, building, cleanBuildStack);
-exports.default = parallel(styles, scripts, watching);
+exports.default = parallel(styles, images, scripts, pages, watching);
